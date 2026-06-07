@@ -31,7 +31,7 @@ def build_interface(predict_churn):
     """
     Función que construye y devuelve la interfaz de Gradio del predictor de churn,
     usando la función predict_churn obtenida como parámetro. La misma
-    interfaz sirve tanto para el notebook como para app.py.
+    interfaz sirve tanto para el notebook como para correr con app.py.
     """
     with gr.Blocks(css=CUSTOM_CSS, title="Churn Predictor") as demo:
 
@@ -47,6 +47,24 @@ def build_interface(predict_churn):
                 model_choice = gr.Radio(
                     ["Random Forest", "Logistic Regression"],
                     value="Random Forest", label="Modelo predictivo",
+                )
+                
+                use_transformer = gr.Checkbox(
+                    value=False,
+                    label="Usar transformer para análisis (solo disponible con Logistic Regression)",
+                    interactive=False, 
+                )
+                
+                def _toggle_transformer_availability(modelo):
+                    if modelo == "Logistic Regression":
+                        return gr.update(interactive=True)
+                    else:
+                        return gr.update(interactive=False, value=False)
+
+                model_choice.change(
+                    fn=_toggle_transformer_availability,
+                    inputs=[model_choice],
+                    outputs=[use_transformer],
                 )
 
                 gr.HTML('<div class="section-lbl">Facturacion</div>')
@@ -120,6 +138,7 @@ def build_interface(predict_churn):
                 StreamingTV, StreamingMovies,
                 PaymentMethod, PhoneService, MultipleLines,
                 gender, SeniorCitizen, Dependents, Partner,
+                use_transformer,
             ],
             outputs=[result, prob_no, prob_yes, plot, ai_analysis],
         )

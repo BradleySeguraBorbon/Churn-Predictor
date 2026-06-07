@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from src.explainer import explain_prediction
 
 def make_churn_gauge(prob_yes: float):
     """
@@ -73,9 +74,6 @@ def make_churn_gauge(prob_yes: float):
 def build_predict_churn(logreg_pipeline, rf_pipeline):
     """
     Aquí se construye la función predict_churn usando los pipelines enviados por parámetro.
-    Esto permite que la misma lógica de predicción sirva tanto al notebook
-    (modelos entrenados en memoria) como a app.py (modelos cargados desde
-    archivos serializados).
     """
     def predict_churn(
         model_choice,
@@ -97,6 +95,7 @@ def build_predict_churn(logreg_pipeline, rf_pipeline):
         SeniorCitizen,
         Dependents,
         Partner,
+        use_transformer,
     ):
         try:
             data = pd.DataFrame([{
@@ -134,42 +133,53 @@ def build_predict_churn(logreg_pipeline, rf_pipeline):
 
             gauge_fig = make_churn_gauge(prob_yes)
 
-            # ── Análisis de factores ─────────────────────────────────────────
-            risk_factors, protective_factors = [], []
+            ai_analysis = None
 
-            if Contract == "Month-to-month":
-                risk_factors.append("contrato mensual sin compromiso a largo plazo")
-            else:
-                protective_factors.append(f"contrato *{Contract}* que ancla al cliente")
-            if InternetService == "Fiber optic":
-                risk_factors.append("fibra óptica (alta competencia y expectativas elevadas)")
-            if PaymentMethod == "Electronic check":
-                risk_factors.append("cheque electrónico (históricamente asociado a mayor churn)")
-            if tenure < 12:
-                risk_factors.append(f"antigüedad baja ({tenure} meses), período de mayor riesgo")
-            elif tenure > 36:
-                protective_factors.append(f"alta fidelidad ({tenure} meses con el servicio)")
-            if OnlineSecurity == "No" and InternetService != "No":
-                risk_factors.append("sin seguridad en línea activa")
-            if TechSupport == "No" and InternetService != "No":
-                risk_factors.append("sin soporte técnico contratado")
-            if OnlineSecurity == "Yes":  protective_factors.append("seguridad en línea activa")
-            if TechSupport == "Yes":     protective_factors.append("soporte técnico contratado")
-            if OnlineBackup == "Yes":    protective_factors.append("respaldo en línea activo")
-            if Dependents == "Yes":      protective_factors.append("cliente con dependientes a cargo (mayor estabilidad)")
-            if Partner == "Yes":         protective_factors.append("cliente con pareja (perfil de mayor estabilidad)")
+            # Análisis con transformer para Regresión Logística
+            if use_transformer and model_choice == "Logistic Regression":
+                print("Llamando a explain_prediction...")
+                ai_analysis = explain_prediction(logreg_pipeline, data, prob_yes)
+                print(f"explain_prediction devolvió: {'None (fallback)' if ai_analysis is None else 'resultado válido'}")
+                if ai_analysis is None:
+                    print("⚠️  Transformer no disponible o falló. Usando análisis rule-based.")
 
-            risk_lines = "\n".join(f"- {f}" for f in risk_factors)      or "- Ninguno identificado"
-            prot_lines = "\n".join(f"- {f}" for f in protective_factors) or "- Ninguno identificado"
+            # Análisis basado en reglas (el tradicional)
+            if ai_analysis is None:
+                risk_factors, protective_factors = [], []
 
-            if prob_yes >= 0.66:
-                recomendacion = "**Acción inmediata recomendada.** Riesgo elevado. Contacto proactivo, oferta de retención y revisión de experiencia del servicio."
-            elif prob_yes >= 0.33:
-                recomendacion = "**Monitoreo activo.** Riesgo moderado. Seguimiento periódico y beneficios adicionales en la próxima facturación."
-            else:
-                recomendacion = "**Cliente estable.** Riesgo bajo. Mantener calidad del servicio y programas de fidelización."
+                if Contract == "Month-to-month":
+                    risk_factors.append("contrato mensual sin compromiso a largo plazo")
+                else:
+                    protective_factors.append(f"contrato *{Contract}* que ancla al cliente")
+                if InternetService == "Fiber optic":
+                    risk_factors.append("fibra óptica (alta competencia y expectativas elevadas)")
+                if PaymentMethod == "Electronic check":
+                    risk_factors.append("cheque electrónico (históricamente asociado a mayor churn)")
+                if tenure < 12:
+                    risk_factors.append(f"antigüedad baja ({tenure} meses), período de mayor riesgo")
+                elif tenure > 36:
+                    protective_factors.append(f"alta fidelidad ({tenure} meses con el servicio)")
+                if OnlineSecurity == "No" and InternetService != "No":
+                    risk_factors.append("sin seguridad en línea activa")
+                if TechSupport == "No" and InternetService != "No":
+                    risk_factors.append("sin soporte técnico contratado")
+                if OnlineSecurity == "Yes":  protective_factors.append("seguridad en línea activa")
+                if TechSupport == "Yes":     protective_factors.append("soporte técnico contratado")
+                if OnlineBackup == "Yes":    protective_factors.append("respaldo en línea activo")
+                if Dependents == "Yes":      protective_factors.append("cliente con dependientes a cargo (mayor estabilidad)")
+                if Partner == "Yes":         protective_factors.append("cliente con pareja (perfil de mayor estabilidad)")
 
-            ai_analysis = f"""### Análisis del perfil del cliente
+                risk_lines = "\n".join(f"- {f}" for f in risk_factors)      or "- Ninguno identificado"
+                prot_lines = "\n".join(f"- {f}" for f in protective_factors) or "- Ninguno identificado"
+
+                if prob_yes >= 0.66:
+                    recomendacion = "**Acción inmediata recomendada.** Riesgo elevado. Contacto proactivo, oferta de retención y revisión de experiencia del servicio."
+                elif prob_yes >= 0.33:
+                    recomendacion = "**Monitoreo activo.** Riesgo moderado. Seguimiento periódico y beneficios adicionales en la próxima facturación."
+                else:
+                    recomendacion = "**Cliente estable.** Riesgo bajo. Mantener calidad del servicio y programas de fidelización."
+
+                ai_analysis = f"""### Análisis del perfil del cliente
 
 **Modelo:** {model_choice} &nbsp;|&nbsp; **P(abandono):** {prob_yes:.1%} &nbsp;|&nbsp; **P(permanencia):** {prob_no:.1%}
 
