@@ -3,8 +3,7 @@ import gradio as gr
 
 CUSTOM_CSS = """
 .gradio-container { background-color: #0F1117 !important; font-family: 'Inter', sans-serif !important; }
-.main-title { background: linear-gradient(90deg,#667EEA,#764BA2); -webkit-background-clip:text;
-              -webkit-text-fill-color:transparent; font-size:2rem !important; font-weight:800 !important;
+.main-title { color:#667EEA; font-size:2rem !important; font-weight:800 !important;
               text-align:center; padding:1rem 0 0.3rem; }
 .subtitle   { text-align:center; color:#888; font-size:.9rem; margin-bottom:1.2rem; }
 .result-box textarea { background:#1A1D2E !important; border:2px solid #667EEA !important;
@@ -17,13 +16,13 @@ CUSTOM_CSS = """
               color:#38BDF8 !important; font-size:1.4rem !important; font-weight:800 !important;
               text-align:center !important; border-radius:10px !important; }
 .ai-box   { background:#12151F !important; border:1px solid #2A2D3E !important;
-              border-left:4px solid #667EEA !important; border-radius:12px !important; padding:1.2rem !important; }
+              border-radius:12px !important; padding:1.2rem !important; }
 .section-lbl { color:#667EEA; font-size:.72rem; font-weight:700; text-transform:uppercase;
                letter-spacing:.12em; margin:.9rem 0 .3rem; }
-#predict-btn { background:linear-gradient(135deg,#667EEA,#764BA2) !important; border:none !important;
+#predict-btn { background:#667EEA !important; !important; border:none !important;
                color:#fff !important; font-size:1.05rem !important; font-weight:700 !important;
                padding:.75rem 2rem !important; border-radius:10px !important; }
-#predict-btn:hover { opacity:.85 !important; }
+#predict-btn:hover { background:#5A6FD6 !important; opacity:.85 !important; }
 """
 
 
@@ -37,7 +36,7 @@ def build_interface(predict_churn):
 
         gr.HTML("""
             <div class="main-title">Churn Predictor</div>
-            <div class="subtitle">Prediccion de abandono de clientes · Machine Learning + Analisis IA</div>
+            <div class="subtitle">Prediccion de abandono de clientes para servicios de telecomunicaciones</div>
         """)
 
         with gr.Row():
@@ -45,14 +44,14 @@ def build_interface(predict_churn):
             with gr.Column(scale=2):
 
                 model_choice = gr.Radio(
-                    ["Random Forest", "Logistic Regression"],
-                    value="Random Forest", label="Modelo predictivo",
+                    ["Logistic Regression", "Random Forest"],
+                    value="Logistic Regression", label="Modelo predictivo",
                 )
                 
                 use_transformer = gr.Checkbox(
                     value=False,
                     label="Usar transformer para análisis (solo disponible con Logistic Regression)",
-                    interactive=False, 
+                    interactive=True, 
                 )
                 
                 def _toggle_transformer_availability(modelo):
@@ -103,10 +102,12 @@ def build_interface(predict_churn):
                 with gr.Row():
                     MultipleLines = gr.Dropdown(["Yes","No","No phone service"],
                                                 value="No", label="Multiples lineas")
-                    gender        = gr.Radio(["Male","Female"], value="Male", label="Genero")
 
+                gr.HTML('<div class="section-lbl">Perfil del cliente</div>')
                 with gr.Row():
+                    gender        = gr.Radio(["Male","Female"], value="Male", label="Genero")
                     SeniorCitizen = gr.Radio([0, 1], value=0, label="Adulto mayor (1 = Si)")
+                with gr.Row():
                     Dependents    = gr.Radio(["Yes", "No"], value="No", label="Dependientes a cargo")
                     Partner       = gr.Radio(["Yes", "No"], value="No", label="Tiene pareja")
 
@@ -123,9 +124,9 @@ def build_interface(predict_churn):
 
                 plot = gr.Plot(label="Indicador de riesgo")
 
-                gr.HTML('<div class="section-lbl">Analisis generado por IA</div>')
+                gr.HTML('<div class="section-lbl">Análisis automático</div>')
                 ai_analysis = gr.Markdown(
-                    value="> El analisis aparecera aqui tras ejecutar la prediccion.",
+                    value="> El análisis aparecerá aquí tras ejecutar la prediccion.",
                     elem_classes=["ai-box"],
                 )
 

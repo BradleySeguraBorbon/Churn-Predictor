@@ -173,11 +173,11 @@ def build_predict_churn(logreg_pipeline, rf_pipeline):
                 prot_lines = "\n".join(f"- {f}" for f in protective_factors) or "- Ninguno identificado"
 
                 if prob_yes >= 0.66:
-                    recomendacion = "**Acción inmediata recomendada.** Riesgo elevado. Contacto proactivo, oferta de retención y revisión de experiencia del servicio."
+                    recomendacion = "**Recomendación:**\n\n**Acción inmediata recomendada.** Riesgo elevado. Contacto proactivo, oferta de retención y revisión de experiencia del servicio."
                 elif prob_yes >= 0.33:
-                    recomendacion = "**Monitoreo activo.** Riesgo moderado. Seguimiento periódico y beneficios adicionales en la próxima facturación."
+                    recomendacion = "**Recomendación:**\n\n**Monitoreo activo.** Riesgo moderado. Seguimiento periódico y beneficios adicionales en la próxima facturación."
                 else:
-                    recomendacion = "**Cliente estable.** Riesgo bajo. Mantener calidad del servicio y programas de fidelización."
+                    recomendacion = "**Recomendación:**\n\n**Cliente estable.** Riesgo bajo. Mantener calidad del servicio y programas de fidelización."
 
                 ai_analysis = f"""### Análisis del perfil del cliente
 
